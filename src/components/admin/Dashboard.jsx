@@ -29,7 +29,6 @@ const ACTIVITY_META = {
   qr_scanned:     { icon: '⌖',  color: '#059669', bg: '#ecfdf5', label: 'QR scanned' },
 }
 
-// Simple responsive hook
 function useWindowWidth() {
   const [width, setWidth] = useState(window.innerWidth)
   useEffect(() => {
@@ -66,7 +65,6 @@ export default function Dashboard() {
     })
   }, [])
 
-  // Auto-collapse sidebar on tablet
   useEffect(() => {
     if (isTablet) setSidebarCollapsed(true)
     if (!isMobile && !isTablet) setSidebarCollapsed(false)
@@ -133,16 +131,15 @@ export default function Dashboard() {
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'murals', label: 'Murals', icon: Image },
-    { id: 'map', label: 'Map View', icon: Map },
+    { id: 'murals',    label: 'Murals',    icon: Image },
+    { id: 'map',       label: 'Map View',  icon: Map },
     { id: 'analytics', label: 'Analytics', icon: BarChart2 },
-    { id: 'export', label: 'Export', icon: Download },
-    { id: 'settings', label: 'Settings', icon: SettingsIcon },
+    { id: 'export',    label: 'Export',    icon: Download },
+    { id: 'settings',  label: 'Settings',  icon: SettingsIcon },
   ]
 
   const initials = adminEmail ? adminEmail.substring(0, 2).toUpperCase() : 'AD'
 
-  // Sidebar width
   const sw = isMobile ? '0px' : sidebarCollapsed ? '68px' : '240px'
   const mainPadding = isMobile ? '16px' : isTablet ? '24px 28px' : '36px 40px'
 
@@ -154,10 +151,18 @@ export default function Dashboard() {
     setMobileMenuOpen(false)
   }
 
+  // ─── stat card definitions ───────────────────────────────────────────────
+  const statCards = [
+    { label: 'Total Murals', value: stats.total,    icon: Image,       color: '#0a0a0a' },
+    { label: 'Active',       value: stats.active,   icon: CheckCircle, color: '#16a34a' },
+    { label: 'Inactive',     value: stats.inactive, icon: XCircle,     color: '#dc2626' },
+    { label: 'QR Scans',     value: stats.scans,    icon: TrendingUp,  color: '#2563eb' },
+  ]
+
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#f8f8f6', fontFamily: "'DM Sans', sans-serif" }}>
 
-      {/* top bar*/}
+      {/* ── MOBILE TOP BAR ── */}
       {isMobile && (
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200,
@@ -166,23 +171,29 @@ export default function Dashboard() {
           padding: '0 16px', borderBottom: '1px solid #1a1a1a'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <img src="/dbku-logo.webp" alt="DBKU" style={{ width: '28px', height: '28px', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} onError={e => e.target.style.display = 'none'} />
+            <img
+              src="/dbku-logo.webp" alt="DBKU"
+              style={{ width: '28px', height: '28px', objectFit: 'contain', filter: 'brightness(0) invert(1)' }}
+              onError={e => e.target.style.display = 'none'}
+            />
             <span style={{ color: 'white', fontWeight: '700', fontSize: '13px' }}>Mural Portal</span>
           </div>
-          <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', display: 'flex' }}>
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', display: 'flex' }}
+          >
             {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
       )}
 
-      {/*drawer*/}
+      {/* ── MOBILE DRAWER ── */}
       {isMobile && mobileMenuOpen && (
         <>
-          {/* Overlay */}
-          <div onClick={() => setMobileMenuOpen(false)} style={{
-            position: 'fixed', inset: 0, zIndex: 150, background: 'rgba(0,0,0,0.5)'
-          }} />
-          {/* Drawer */}
+          <div
+            onClick={() => setMobileMenuOpen(false)}
+            style={{ position: 'fixed', inset: 0, zIndex: 150, background: 'rgba(0,0,0,0.5)' }}
+          />
           <div style={{
             position: 'fixed', top: '56px', left: 0, bottom: 0, width: '240px',
             background: '#0a0a0a', zIndex: 160, display: 'flex', flexDirection: 'column',
@@ -224,11 +235,19 @@ export default function Dashboard() {
         </>
       )}
 
-      {/* sidebar for desktop and tablet*/}
+      {/* ── DESKTOP / TABLET SIDEBAR ── */}
       {!isMobile && (
-        <div style={{ width: sw, background: '#0a0a0a', display: 'flex', flexDirection: 'column', position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 100, transition: 'width 0.2s', overflow: 'hidden' }}>
+        <div style={{
+          width: sw, background: '#0a0a0a', display: 'flex', flexDirection: 'column',
+          position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 100,
+          transition: 'width 0.2s', overflow: 'hidden'
+        }}>
           <div style={{ padding: sidebarCollapsed ? '20px 16px' : '24px 20px', borderBottom: '1px solid #1a1a1a', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <img src="/dbku-logo.webp" alt="DBKU" style={{ width: '32px', height: '32px', objectFit: 'contain', filter: 'brightness(0) invert(1)', flexShrink: 0 }} onError={e => e.target.style.display = 'none'} />
+            <img
+              src="/dbku-logo.webp" alt="DBKU"
+              style={{ width: '32px', height: '32px', objectFit: 'contain', filter: 'brightness(0) invert(1)', flexShrink: 0 }}
+              onError={e => e.target.style.display = 'none'}
+            />
             {!sidebarCollapsed && (
               <div>
                 <div style={{ color: 'white', fontWeight: '700', fontSize: '13px', whiteSpace: 'nowrap' }}>Mural Portal</div>
@@ -299,36 +318,51 @@ export default function Dashboard() {
         transition: 'margin-left 0.2s'
       }}>
 
-        {/* DASHBOARD VIEW */}
+        {/* ════════════════════════════════════════
+            DASHBOARD VIEW
+        ════════════════════════════════════════ */}
         {view === 'dashboard' && (
           <>
-            <div style={{ marginBottom: '24px' }}>
-              <h1 style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: '700', letterSpacing: '-0.5px' }}>Dashboard</h1>
-              <p style={{ color: '#888', fontSize: '13px', marginTop: '3px' }}>DBKU Mural Registry overview</p>
+            {/* Page header */}
+            <div style={{ marginBottom: isMobile ? '16px' : '24px' }}>
+              <h1 style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: '700', letterSpacing: '-0.5px', margin: 0 }}>Dashboard</h1>
+              <p style={{ color: '#888', fontSize: '12px', marginTop: '3px', marginBottom: 0 }}>DBKU Mural Registry overview</p>
             </div>
 
-            {/* Stat cards */}
+            {/* ── STAT CARDS ── */}
             <div style={{
               display: 'grid',
-              gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
-              gap: isMobile ? '10px' : '14px',
-              marginBottom: '20px'
+              gridTemplateColumns: 'repeat(2, 1fr)',
+              gap: isMobile ? '8px' : '14px',
+              marginBottom: isMobile ? '12px' : '20px'
             }}>
-              {[
-                { label: 'Total Murals', value: stats.total, icon: Image, color: '#0a0a0a' },
-                { label: 'Active', value: stats.active, icon: CheckCircle, color: '#16a34a' },
-                { label: 'Inactive', value: stats.inactive, icon: XCircle, color: '#dc2626' },
-                { label: 'QR Scans', value: stats.scans, icon: TrendingUp, color: '#2563eb' },
-              ].map(s => {
+              {statCards.map(s => {
                 const Icon = s.icon
                 return (
-                  <div key={s.label} style={{ background: 'white', borderRadius: '12px', padding: isMobile ? '14px' : '20px', border: '1px solid #ebebeb' }}>
+                  <div key={s.label} style={{
+                    background: 'white',
+                    borderRadius: '12px',
+                    padding: isMobile ? '14px' : '20px',
+                    border: '1px solid #ebebeb'
+                  }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <div>
-                        <div style={{ fontSize: isMobile ? '22px' : '28px', fontWeight: '700', letterSpacing: '-1px', color: s.color }}>{s.value}</div>
+                        <div style={{
+                          fontSize: isMobile ? '22px' : '28px',
+                          fontWeight: '700',
+                          letterSpacing: '-1px',
+                          color: s.color
+                        }}>
+                          {s.value}
+                        </div>
                         <div style={{ fontSize: '11px', color: '#888', marginTop: '3px' }}>{s.label}</div>
                       </div>
-                      <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#f8f8f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <div style={{
+                        width: '32px', height: '32px', borderRadius: '8px',
+                        background: '#f8f8f6',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        flexShrink: 0
+                      }}>
                         <Icon size={14} color={s.color} />
                       </div>
                     </div>
@@ -337,46 +371,93 @@ export default function Dashboard() {
               })}
             </div>
 
-            {/* Charts — on mobile stacked /}
+            {/* ── STATUS OVERVIEW ── */}
+            {stats.total > 0 && (
+              <div style={{
+                background: 'white',
+                borderRadius: '12px',
+                padding: isMobile ? '12px 14px' : '16px 20px',
+                border: '1px solid #ebebeb',
+                marginBottom: isMobile ? '12px' : '20px'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#888' }}>
+                    Status overview
+                  </span>
+                  <span style={{ fontSize: '11px', color: '#aaa' }}>
+                    {Math.round((stats.active / stats.total) * 100)}% active
+                  </span>
+                </div>
+                <div style={{ height: isMobile ? '6px' : '8px', borderRadius: '4px', background: '#f0f0f0', overflow: 'hidden', marginBottom: '8px' }}>
+                  <div style={{
+                    height: '100%',
+                    width: `${(stats.active / stats.total) * 100}%`,
+                    background: '#0a0a0a',
+                    borderRadius: '4px',
+                    transition: 'width 0.5s'
+                  }} />
+                </div>
+                <div style={{ display: 'flex', gap: '16px' }}>
+                  <span style={{ fontSize: '12px', color: '#555' }}><span style={{ fontWeight: '700' }}>{stats.active}</span> active</span>
+                  <span style={{ fontSize: '12px', color: '#aaa' }}><span style={{ fontWeight: '700' }}>{stats.inactive}</span> inactive</span>
+                </div>
+              </div>
+            )}
+
+            {/* ── CHARTS — stacked on mobile, side by side on desktop ── */}
             <div style={{
               display: 'grid',
               gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
-              gap: '16px',
-              marginBottom: '20px'
+              gap: isMobile ? '12px' : '16px',
+              marginBottom: isMobile ? '12px' : '20px'
             }}>
-              <div style={{ background: 'white', borderRadius: '12px', padding: '20px', border: '1px solid #ebebeb' }}>
-                <div style={{ fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#888', marginBottom: '4px' }}>QR Scans</div>
-                <div style={{ fontSize: '11px', color: '#bbb', marginBottom: '16px' }}>Last 7 days</div>
-                <ResponsiveContainer width="100%" height={130}>
-                  <BarChart data={scanData} barSize={20}>
-                    <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#aaa' }} axisLine={false} tickLine={false} />
-                    <YAxis hide />
-                    <Tooltip contentStyle={{ fontSize: '12px', borderRadius: '8px', border: '1px solid #ebebeb', boxShadow: 'none' }} />
-                    <Bar dataKey="scans" fill="#0a0a0a" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+              {/* QR Scans bar chart */}
+              <div style={{ background: 'white', borderRadius: '12px', padding: isMobile ? '14px' : '20px', border: '1px solid #ebebeb' }}>
+                <div style={{ marginBottom: '10px' }}>
+                  <div style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#888' }}>QR Scans</div>
+                  <div style={{ fontSize: '11px', color: '#bbb', marginTop: '2px' }}>Last 7 days</div>
+                </div>
+                {/* fixed-height wrapper prevents ResponsiveContainer from bloating */}
+                <div style={{ height: '120px' }}>
+                  <ResponsiveContainer width="100%" height={120}>
+                    <BarChart data={scanData} barSize={18}>
+                      <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#aaa' }} axisLine={false} tickLine={false} />
+                      <YAxis hide />
+                      <Tooltip contentStyle={{ fontSize: '12px', borderRadius: '8px', border: '1px solid #ebebeb', boxShadow: 'none' }} />
+                      <Bar dataKey="scans" fill="#0a0a0a" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
 
-              <div style={{ background: 'white', borderRadius: '12px', padding: '20px', border: '1px solid #ebebeb' }}>
-                <div style={{ fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#888', marginBottom: '4px' }}>By Category</div>
-                <div style={{ fontSize: '11px', color: '#bbb', marginBottom: '8px' }}>Mural distribution</div>
+              {/* Category pie chart */}
+              <div style={{ background: 'white', borderRadius: '12px', padding: isMobile ? '14px' : '20px', border: '1px solid #ebebeb' }}>
+                <div style={{ marginBottom: '10px' }}>
+                  <div style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#888' }}>By Category</div>
+                  <div style={{ fontSize: '11px', color: '#bbb', marginTop: '2px' }}>Mural distribution</div>
+                </div>
                 {categoryData.length === 0
-                  ? <div style={{ height: 130, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ddd', fontSize: '13px' }}>No data yet</div>
-                  : (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                      <ResponsiveContainer width={110} height={110}>
-                        <PieChart>
-                          <Pie data={categoryData} cx="50%" cy="50%" innerRadius={28} outerRadius={50} dataKey="value" paddingAngle={2}>
-                            {categoryData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                          </Pie>
-                        </PieChart>
-                      </ResponsiveContainer>
+                  ? (
+                    <div style={{ height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ddd', fontSize: '12px' }}>
+                      No data yet
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                      <div style={{ width: 100, height: 100, flexShrink: 0 }}>
+                        <ResponsiveContainer width={100} height={100}>
+                          <PieChart>
+                            <Pie data={categoryData} cx="50%" cy="50%" innerRadius={24} outerRadius={44} dataKey="value" paddingAngle={2}>
+                              {categoryData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                            </Pie>
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
                       <div style={{ flex: 1 }}>
                         {categoryData.map((d, i) => (
-                          <div key={d.name} style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '5px' }}>
-                            <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: COLORS[i % COLORS.length], flexShrink: 0 }} />
-                            <span style={{ fontSize: '12px', color: '#555', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</span>
-                            <span style={{ fontSize: '12px', fontWeight: '600', color: '#0a0a0a' }}>{d.value}</span>
+                          <div key={d.name} style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '5px' }}>
+                            <div style={{ width: '7px', height: '7px', borderRadius: '2px', background: COLORS[i % COLORS.length], flexShrink: 0 }} />
+                            <span style={{ fontSize: '11px', color: '#555', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</span>
+                            <span style={{ fontSize: '11px', fontWeight: '600', color: '#0a0a0a' }}>{d.value}</span>
                           </div>
                         ))}
                       </div>
@@ -385,44 +466,49 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Status bar */}
-            {stats.total > 0 && (
-              <div style={{ background: 'white', borderRadius: '12px', padding: '16px 20px', border: '1px solid #ebebeb', marginBottom: '20px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                  <span style={{ fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#888' }}>Mural Status Overview</span>
-                  <span style={{ fontSize: '12px', color: '#aaa' }}>{Math.round((stats.active / stats.total) * 100)}% active</span>
-                </div>
-                <div style={{ height: '8px', borderRadius: '4px', background: '#f0f0f0', overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${(stats.active / stats.total) * 100}%`, background: '#0a0a0a', borderRadius: '4px', transition: 'width 0.5s' }} />
-                </div>
-                <div style={{ display: 'flex', gap: '20px', marginTop: '10px' }}>
-                  <span style={{ fontSize: '12px', color: '#555' }}><span style={{ fontWeight: '700' }}>{stats.active}</span> active</span>
-                  <span style={{ fontSize: '12px', color: '#aaa' }}><span style={{ fontWeight: '700' }}>{stats.inactive}</span> inactive</span>
-                </div>
+            {/* ── QUICK ACTIONS ── */}
+            <div style={{
+              background: 'white',
+              borderRadius: '12px',
+              padding: isMobile ? '12px 14px' : '16px 20px',
+              border: '1px solid #ebebeb',
+              marginBottom: isMobile ? '12px' : '20px'
+            }}>
+              <div style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#888', marginBottom: '10px' }}>
+                Quick Actions
               </div>
-            )}
-
-            {/* Quick actions — 2 cols on mobile, 4 on desktop */}
-            <div style={{ background: 'white', borderRadius: '12px', padding: '16px 20px', border: '1px solid #ebebeb', marginBottom: '20px' }}>
-              <div style={{ fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#888', marginBottom: '12px' }}>Quick Actions</div>
-              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '10px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
                 {[
-                  { label: 'Add Mural', icon: Plus, action: () => setView('add') },
-                  { label: 'Map View', icon: Map, action: () => setView('map') },
+                  { label: 'Add Mural', icon: Plus,      action: () => setView('add') },
+                  { label: 'Map View',  icon: Map,       action: () => setView('map') },
                   { label: 'Analytics', icon: BarChart2, action: () => setView('analytics') },
-                  { label: 'Export', icon: Download, action: () => setView('export') },
+                  { label: 'Export',    icon: Download,  action: () => setView('export') },
                 ].map(a => {
                   const Icon = a.icon
                   return (
-                    <button key={a.label} onClick={a.action} style={{
-                      padding: '14px', background: '#f8f8f6', border: '1px solid #ebebeb',
-                      borderRadius: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '7px',
-                      fontSize: '12px', fontWeight: '600', color: '#0a0a0a', cursor: 'pointer'
-                    }}
+                    <button
+                      key={a.label}
+                      onClick={a.action}
+                      style={{
+                        padding: '12px 10px',
+                        background: '#f8f8f6',
+                        border: '1px solid #ebebeb',
+                        borderRadius: '10px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        flexDirection: 'row',
+                        justifyContent: 'flex-start',
+                        gap: '8px',
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        color: '#0a0a0a',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                      }}
                       onMouseEnter={e => e.currentTarget.style.background = '#f0f0ee'}
                       onMouseLeave={e => e.currentTarget.style.background = '#f8f8f6'}
                     >
-                      <Icon size={18} />
+                      <Icon size={15} style={{ flexShrink: 0 }} />
                       {a.label}
                     </button>
                   )
@@ -430,31 +516,67 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Bottom row — stacked on mobile, side by side on desktop */}
-            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px' }}>
+            {/* ── BOTTOM ROW: Recently Added + Recent Activity ── */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+              gap: isMobile ? '12px' : '16px'
+            }}>
 
               {/* Recently Added */}
-              <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #ebebeb', padding: '16px 20px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-                  <div style={{ fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#888' }}>Recently Added</div>
-                  <button onClick={() => setView('murals')} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#888', background: 'none', border: 'none', cursor: 'pointer' }}>
-                    View all <ChevronRight size={13} />
+              <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #ebebeb', padding: isMobile ? '12px 14px' : '16px 20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <div style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#888' }}>Recently Added</div>
+                  <button
+                    onClick={() => setView('murals')}
+                    style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '11px', color: '#888', background: 'none', border: 'none', cursor: 'pointer' }}
+                  >
+                    View all <ChevronRight size={12} />
                   </button>
                 </div>
+
                 {recentMurals.length === 0
-                  ? <p style={{ color: '#bbb', fontSize: '13px' }}>No murals yet.</p>
-                  : recentMurals.map(m => (
-                    <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 0', borderBottom: '1px solid #f5f5f5' }}>
-                      <div style={{ width: '38px', height: '38px', borderRadius: '8px', background: '#f0f0f0', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  ? <p style={{ color: '#bbb', fontSize: '13px', margin: 0 }}>No murals yet.</p>
+                  : recentMurals.map((m, idx) => (
+                    <div key={m.id} style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      padding: isMobile ? '8px 0' : '10px 0',
+                      borderBottom: idx < recentMurals.length - 1 ? '1px solid #f5f5f5' : 'none'
+                    }}>
+                      {/* thumbnail */}
+                      <div style={{
+                        width: isMobile ? '34px' : '38px',
+                        height: isMobile ? '34px' : '38px',
+                        borderRadius: '8px',
+                        background: '#f0f0f0',
+                        overflow: 'hidden',
+                        flexShrink: 0,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center'
+                      }}>
                         {m.mural_images?.[0]?.image_url
                           ? <img src={m.mural_images[0].image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          : <Image size={14} color="#ccc" />}
+                          : <Image size={13} color="#ccc" />}
                       </div>
+                      {/* text */}
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: '13px', fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.title}</div>
+                        <div style={{ fontSize: '13px', fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {m.title}
+                        </div>
                         <div style={{ fontSize: '11px', color: '#888' }}>{m.artist} · {m.mural_id}</div>
                       </div>
-                      <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '20px', background: m.status === 'active' ? '#f0f0f0' : '#fafafa', color: m.status === 'active' ? '#333' : '#bbb', fontWeight: '600', border: '1px solid #e8e8e8', flexShrink: 0 }}>
+                      {/* status badge */}
+                      <span style={{
+                        fontSize: '10px',
+                        padding: '2px 7px',
+                        borderRadius: '20px',
+                        background: m.status === 'active' ? '#f0f0f0' : '#fafafa',
+                        color: m.status === 'active' ? '#333' : '#bbb',
+                        fontWeight: '600',
+                        border: '1px solid #e8e8e8',
+                        flexShrink: 0
+                      }}>
                         {m.status}
                       </span>
                     </div>
@@ -463,30 +585,48 @@ export default function Dashboard() {
               </div>
 
               {/* Recent Activity */}
-              <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #ebebeb', padding: '16px 20px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
-                    <Activity size={13} color="#888" />
-                    <div style={{ fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#888' }}>Recent Activity</div>
+              <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #ebebeb', padding: isMobile ? '12px 14px' : '16px 20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Activity size={12} color="#888" />
+                    <div style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#888' }}>Recent Activity</div>
                   </div>
-                  <button onClick={loadActivity} style={{ fontSize: '11px', color: '#bbb', background: 'none', border: 'none', cursor: 'pointer' }}>Refresh</button>
+                  <button
+                    onClick={loadActivity}
+                    style={{ fontSize: '11px', color: '#bbb', background: 'none', border: 'none', cursor: 'pointer' }}
+                  >
+                    Refresh
+                  </button>
                 </div>
+
                 {recentActivity.length === 0 ? (
-                  <p style={{ color: '#bbb', fontSize: '13px' }}>No activity yet.</p>
+                  <p style={{ color: '#bbb', fontSize: '13px', margin: 0 }}>No activity yet.</p>
                 ) : (
                   recentActivity.map((a, idx) => {
                     const meta = ACTIVITY_META[a.action] || { icon: '•', color: '#888', bg: '#f8f8f6', label: a.action }
                     return (
                       <div key={a.id} style={{
-                        display: 'flex', alignItems: 'flex-start', gap: '10px',
-                        padding: '9px 0',
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: '9px',
+                        padding: isMobile ? '7px 0' : '9px 0',
                         borderBottom: idx < recentActivity.length - 1 ? '1px solid #f5f5f5' : 'none'
                       }}>
-                        <div style={{ width: '26px', height: '26px', borderRadius: '6px', flexShrink: 0, background: meta.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', color: meta.color, fontWeight: '700' }}>
+                        {/* icon */}
+                        <div style={{
+                          width: isMobile ? '24px' : '26px',
+                          height: isMobile ? '24px' : '26px',
+                          borderRadius: '6px',
+                          flexShrink: 0,
+                          background: meta.bg,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: '12px', color: meta.color, fontWeight: '700'
+                        }}>
                           {meta.icon}
                         </div>
+                        {/* text */}
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: '13px', fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <div style={{ fontSize: isMobile ? '12px' : '13px', fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {a.mural_title || '—'}
                           </div>
                           <div style={{ fontSize: '11px', color: '#aaa', marginTop: '1px' }}>
@@ -504,13 +644,15 @@ export default function Dashboard() {
           </>
         )}
 
-        {/* MURALS VIEW */}
+        {/* ════════════════════════════════════════
+            MURALS VIEW
+        ════════════════════════════════════════ */}
         {view === 'murals' && (
           <>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
               <div>
-                <h1 style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: '700', letterSpacing: '-0.5px' }}>All Murals</h1>
-                <p style={{ color: '#888', fontSize: '13px', marginTop: '3px' }}>{stats.total} murals in registry</p>
+                <h1 style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: '700', letterSpacing: '-0.5px', margin: 0 }}>All Murals</h1>
+                <p style={{ color: '#888', fontSize: '13px', marginTop: '3px', marginBottom: 0 }}>{stats.total} murals in registry</p>
               </div>
               <button onClick={() => setView('add')} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', background: '#0a0a0a', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>
                 <Plus size={15} /> Add Mural
@@ -520,54 +662,74 @@ export default function Dashboard() {
           </>
         )}
 
+        {/* ════════════════════════════════════════
+            ADD / EDIT VIEW
+        ════════════════════════════════════════ */}
         {(view === 'add' || view === 'edit') && (
           <>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-              <button onClick={handleDone} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 13px', background: 'white', border: '1px solid #e0e0e0', borderRadius: '8px', fontSize: '12px', color: '#555', cursor: 'pointer' }}>← Back</button>
-              <h1 style={{ fontSize: isMobile ? '18px' : '22px', fontWeight: '700', letterSpacing: '-0.5px' }}>{view === 'add' ? 'Add New Mural' : 'Edit Mural'}</h1>
+              <button onClick={handleDone} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 13px', background: 'white', border: '1px solid #e0e0e0', borderRadius: '8px', fontSize: '12px', color: '#555', cursor: 'pointer' }}>
+                ← Back
+              </button>
+              <h1 style={{ fontSize: isMobile ? '18px' : '22px', fontWeight: '700', letterSpacing: '-0.5px', margin: 0 }}>
+                {view === 'add' ? 'Add New Mural' : 'Edit Mural'}
+              </h1>
             </div>
             <MuralForm mural={editingMural} onDone={handleDone} />
           </>
         )}
 
+        {/* ════════════════════════════════════════
+            MAP VIEW
+        ════════════════════════════════════════ */}
         {view === 'map' && (
           <>
             <div style={{ marginBottom: '20px' }}>
-              <h1 style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: '700', letterSpacing: '-0.5px' }}>Map View</h1>
-              <p style={{ color: '#888', fontSize: '13px', marginTop: '3px' }}>All mural locations in Kuching</p>
+              <h1 style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: '700', letterSpacing: '-0.5px', margin: 0 }}>Map View</h1>
+              <p style={{ color: '#888', fontSize: '13px', marginTop: '3px', marginBottom: 0 }}>All mural locations in Kuching</p>
             </div>
             <MapView />
           </>
         )}
 
+        {/* ════════════════════════════════════════
+            ANALYTICS VIEW
+        ════════════════════════════════════════ */}
         {view === 'analytics' && (
           <>
             <div style={{ marginBottom: '20px' }}>
-              <h1 style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: '700', letterSpacing: '-0.5px' }}>Analytics</h1>
-              <p style={{ color: '#888', fontSize: '13px', marginTop: '3px' }}>QR scan statistics and trends</p>
+              <h1 style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: '700', letterSpacing: '-0.5px', margin: 0 }}>Analytics</h1>
+              <p style={{ color: '#888', fontSize: '13px', marginTop: '3px', marginBottom: 0 }}>QR scan statistics and trends</p>
             </div>
             <Analytics />
           </>
         )}
 
+        {/* ════════════════════════════════════════
+            EXPORT VIEW
+        ════════════════════════════════════════ */}
         {view === 'export' && (
           <>
             <div style={{ marginBottom: '20px' }}>
-              <h1 style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: '700', letterSpacing: '-0.5px' }}>Export</h1>
-              <p style={{ color: '#888', fontSize: '13px', marginTop: '3px' }}>Download mural data as Excel or PDF</p>
+              <h1 style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: '700', letterSpacing: '-0.5px', margin: 0 }}>Export</h1>
+              <p style={{ color: '#888', fontSize: '13px', marginTop: '3px', marginBottom: 0 }}>Download mural data as Excel or PDF</p>
             </div>
             <ExportPanel />
           </>
         )}
 
+        {/* ════════════════════════════════════════
+            SETTINGS VIEW
+        ════════════════════════════════════════ */}
         {view === 'settings' && (
           <>
             <div style={{ marginBottom: '20px' }}>
-              <h1 style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: '700', letterSpacing: '-0.5px' }}>Settings</h1>
+              <h1 style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: '700', letterSpacing: '-0.5px', margin: 0 }}>Settings</h1>
             </div>
             <Settings adminEmail={adminEmail} onLogout={handleLogout} />
           </>
         )}
+
       </div>
     </div>
   )
