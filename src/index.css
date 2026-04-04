@@ -1,0 +1,53 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: #f8f8f6;
+  color: #0a0a0a;
+  -webkit-font-smoothing: antialiased;
+}
+
+button { cursor: pointer; font-family: inherit; }
+input, textarea, select { font-family: inherit; }
+a { text-decoration: none; }
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #f0f0f0; }
+::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+
+.mural-popup .leaflet-popup-content-wrapper {
+  padding: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+  border: 1px solid #ebebeb;
+}
+
+.mural-popup .leaflet-popup-content {
+  margin: 0;
+  width: auto !important;
+}
+
+.mural-popup .leaflet-popup-tip-container {
+  display: none;
+}
+/* Leaflet map styles */
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+.leaflet-marker-icon {
+  background: transparent;
+}
+
+.leaflet-pane,
+.leaflet-tile,
+.leaflet-marker-icon,
+.leaflet-marker-shadow,
+.leaflet-tile-container {
+  z-index: 1;
+}
