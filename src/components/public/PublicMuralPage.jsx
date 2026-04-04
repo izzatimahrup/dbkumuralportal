@@ -130,7 +130,7 @@ export default function PublicMuralPage() {
         </div>
       )}
 
-      {/* Content - matches preview styling */}
+      {/* Content */}
       <div style={{ maxWidth: '680px', margin: '0 auto', padding: '24px 20px 60px' }}>
         {/* Category - matches preview */}
         <div style={{ marginBottom: '10px' }}>
@@ -160,7 +160,7 @@ export default function PublicMuralPage() {
           {mural.title}
         </h1>
 
-        {/* Meta - matches preview */}
+        {/* Meta  */}
         <div style={{ 
           display: 'flex', 
           flexWrap: 'wrap', 
@@ -186,7 +186,7 @@ export default function PublicMuralPage() {
           </p>
         )}
 
-        {/* Story - matches preview styling */}
+        {/* Story */}
         {mural.story && (
           <div style={{ 
             marginBottom: '20px', 
@@ -210,7 +210,7 @@ export default function PublicMuralPage() {
           </div>
         )}
 
-        {/* Gallery thumbnails - matches preview */}
+        {/* Gallery thumbnails */}
         {images.length > 1 && (
           <div style={{ marginBottom: '20px' }}>
             <div style={{ 
@@ -246,7 +246,7 @@ export default function PublicMuralPage() {
           </div>
         )}
 
-        {/* YouTube - matches preview */}
+        {/* YouTube*/}
         {ytId && (
           <div style={{ marginBottom: '20px' }}>
             <div style={{ 
@@ -273,7 +273,7 @@ export default function PublicMuralPage() {
           </div>
         )}
 
-        {/* Tags - matches preview */}
+        {/* Tags  */}
         {tags.length > 0 && (
           <div style={{ marginBottom: '20px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '8px' }}>
@@ -305,7 +305,7 @@ export default function PublicMuralPage() {
           </div>
         )}
 
-        {/* Location - matches preview styling exactly */}
+        {/* Location*/}
         {location && (
           <div style={{ background: 'white', borderRadius: '12px', overflow: 'hidden', border: '1px solid #ebebeb' }}>
             <div style={{ padding: '16px 16px 0' }}>
@@ -329,7 +329,7 @@ export default function PublicMuralPage() {
               </p>
             </div>
 
-            {/* Embedded map - matches preview */}
+            {/* Embedded map */}
             {location.lat && location.lng && (
               <div style={{ width: '100%', height: '200px', overflow: 'hidden' }}>
                 <iframe
@@ -345,7 +345,7 @@ export default function PublicMuralPage() {
               </div>
             )}
 
-            {/* Directions link - matches preview */}
+            {/* Directions link*/}
             {location.google_maps_url && (
               <div style={{ padding: '10px 16px 14px' }}>
                 <a 
@@ -369,7 +369,7 @@ export default function PublicMuralPage() {
           </div>
         )}
 
-        {/* Footer - matches preview */}
+        {/* Footer */}
         <div style={{ marginTop: '32px', paddingTop: '16px', borderTop: '1px solid #ebebeb' }}>
           <span style={{ fontSize: '11px', color: '#bbb' }}>
             Dewan Bandaraya Kuching Utara · Mural Registry

@@ -17,7 +17,7 @@ function useWindowWidth() {
   return width
 }
 
-// ── Mobile Preview Modal ─────────────────────────────────────────────────────
+// Mobile Preview 
 function MobilePreviewModal({ mural, onClose, onEdit, onOpenQR }) {
   const [activeImg, setActiveImg] = useState(0)
   const windowWidth = useWindowWidth()
@@ -205,7 +205,7 @@ function MobilePreviewModal({ mural, onClose, onEdit, onOpenQR }) {
   )
 }
 
-// ── Main MuralList ───────────────────────────────────────────────────────────
+// Main MuralList Component
 export default function MuralList({ onEdit, onRefresh }) {
   const [murals, setMurals] = useState([])
   const [filtered, setFiltered] = useState([])
@@ -385,7 +385,7 @@ export default function MuralList({ onEdit, onRefresh }) {
                     </div>
                   )}
 
-                  {/* Title — 2 lines max */}
+                  {/* Title */}
                   <div style={{
                     fontSize: isMobile ? '11px' : '13px', fontWeight: '700', color: '#0a0a0a',
                     lineHeight: '1.3', marginBottom: isMobile ? '2px' : '4px',

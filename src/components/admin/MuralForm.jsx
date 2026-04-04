@@ -560,9 +560,9 @@ export default function MuralForm({ mural, onDone }) {
       return
     }
 
-    // Handle database images
+    
     try {
-      // First, update the database: set all images to is_cover = false for this mural
+      // set all images to is_cover = false for this mural
       const { error: updateError } = await supabase
         .from('mural_images')
         .update({ is_cover: false })

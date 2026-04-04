@@ -157,7 +157,7 @@ export default function Dashboard() {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#f8f8f6', fontFamily: "'DM Sans', sans-serif" }}>
 
-      {/* ── MOBILE TOP BAR ── */}
+      {/* top bar*/}
       {isMobile && (
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200,
@@ -175,7 +175,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* ── MOBILE DRAWER ── */}
+      {/*drawer*/}
       {isMobile && mobileMenuOpen && (
         <>
           {/* Overlay */}
@@ -224,7 +224,7 @@ export default function Dashboard() {
         </>
       )}
 
-      {/* ── DESKTOP / TABLET SIDEBAR ── */}
+      {/* sidebar for desktop and tablet*/}
       {!isMobile && (
         <div style={{ width: sw, background: '#0a0a0a', display: 'flex', flexDirection: 'column', position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 100, transition: 'width 0.2s', overflow: 'hidden' }}>
           <div style={{ padding: sidebarCollapsed ? '20px 16px' : '24px 20px', borderBottom: '1px solid #1a1a1a', display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -307,7 +307,7 @@ export default function Dashboard() {
               <p style={{ color: '#888', fontSize: '13px', marginTop: '3px' }}>DBKU Mural Registry overview</p>
             </div>
 
-            {/* Stat cards — 2 cols on mobile, 4 on desktop */}
+            {/* Stat cards */}
             <div style={{
               display: 'grid',
               gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
@@ -337,7 +337,7 @@ export default function Dashboard() {
               })}
             </div>
 
-            {/* Charts — stacked on mobile, side by side on desktop */}
+            {/* Charts — on mobile stacked /}
             <div style={{
               display: 'grid',
               gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
