@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../../supabase'
 import { MapPin, Calendar, User, Tag, ExternalLink } from 'lucide-react'
-import { logActivity } from '../../helpers/logActivity'
+//import { logActivity } from '../../helpers/logActivity'
 
 export default function PublicMuralPage() {
   const { muralId } = useParams()
@@ -14,12 +14,7 @@ export default function PublicMuralPage() {
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
 
-  useEffect(() => { 
-    loadMural()
-    logScan()
-  }, [muralId])
-
-  const loadMural = async () => {
+  const loadMural = useCallback(async () => {
     const { data, error } = await supabase
       .from('murals')
       .select('*, mural_locations(*), mural_images(*), mural_tags(*)')
@@ -44,9 +39,9 @@ export default function PublicMuralPage() {
     setTags(data.mural_tags?.map(t => t.tag) || [])
     setLocation(data.mural_locations?.[0] || null)
     setLoading(false)
-  }
+  }, [muralId])
 
-  const logScan = async () => {
+  const logScan = useCallback(async () => {
     const { data: m } = await supabase
       .from('murals')
       .select('id')
@@ -59,7 +54,12 @@ export default function PublicMuralPage() {
         user_agent: navigator.userAgent 
       })
     }
-  }
+  }, [muralId])
+
+  useEffect(() => { 
+    loadMural()
+    logScan()
+  }, [loadMural, logScan])
 
   const getYouTubeId = (url) => {
     if (!url) return null

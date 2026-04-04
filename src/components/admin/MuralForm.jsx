@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '../../supabase'
 import { Eye, EyeOff, MapPin, User, Calendar, Tag, ExternalLink, Crosshair } from 'lucide-react'
 import { logActivity } from '../../helpers/logActivity'
@@ -64,7 +64,7 @@ function LocationPickerOSM({ lat, lng, onLocationChange, onAddressChange }) {
   }, [lat, lng])
 
   function MapEvents() {
-    const map = useMapEvents({
+    useMapEvents({
       click(e) {
         const { lat, lng } = e.latlng
         setPosition([lat, lng])
@@ -380,7 +380,7 @@ export default function MuralForm({ mural, onDone }) {
       const tempId = `temp_${Date.now()}`
       setTempMuralId(tempId)
     }
-  }, [mural])
+  }, [mural, isEdit])
 
   const getCurrentLocation = () => {
     if (!navigator.geolocation) {

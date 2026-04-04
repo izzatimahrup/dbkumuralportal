@@ -12,7 +12,7 @@ export default function Admin() {
       if (!session) navigate('/login')
       else setChecking(false)
     })
-  }, [])
+  }, [navigate])
 
   if (checking) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

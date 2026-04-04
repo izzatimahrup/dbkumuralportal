@@ -218,9 +218,19 @@ export default function MuralList({ onEdit, onRefresh }) {
 
   const windowWidth = useWindowWidth()
   const isMobile = windowWidth < 640
-
+  
+  const loadMurals = async () => {
+    setLoading(true)
+    const { data } = await supabase
+    .from('murals')
+    .select('*, mural_locations(*), mural_images(*), mural_tags(*)')
+    .order('created_at', { ascending: false })
+    setMurals(data || [])
+    setLoading(false)
+}
+ 
   useEffect(() => { loadMurals() }, [])
-
+ 
   useEffect(() => {
     let list = murals
     if (search) list = list.filter(m =>
@@ -234,15 +244,7 @@ export default function MuralList({ onEdit, onRefresh }) {
     setFiltered(list)
   }, [murals, search, statusFilter, categoryFilter])
 
-  const loadMurals = async () => {
-    setLoading(true)
-    const { data } = await supabase
-      .from('murals')
-      .select('*, mural_locations(*), mural_images(*), mural_tags(*)')
-      .order('created_at', { ascending: false })
-    setMurals(data || [])
-    setLoading(false)
-  }
+
 
   const toggleStatus = async (mural) => {
     const newStatus = mural.status === 'active' ? 'inactive' : 'active'

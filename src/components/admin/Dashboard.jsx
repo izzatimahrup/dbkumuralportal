@@ -55,21 +55,6 @@ export default function Dashboard() {
   const isMobile = windowWidth < 768
   const isTablet = windowWidth >= 768 && windowWidth < 1024
 
-  useEffect(() => {
-    loadStats()
-    loadRecent()
-    loadActivity()
-    loadChartData()
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) setAdminEmail(user.email)
-    })
-  }, [])
-
-  useEffect(() => {
-    if (isTablet) setSidebarCollapsed(true)
-    if (!isMobile && !isTablet) setSidebarCollapsed(false)
-  }, [isMobile, isTablet])
-
   const loadStats = async () => {
     const { count: total } = await supabase.from('murals').select('*', { count: 'exact', head: true })
     const { count: active } = await supabase.from('murals').select('*', { count: 'exact', head: true }).eq('status', 'active')
@@ -158,6 +143,22 @@ export default function Dashboard() {
     { label: 'Inactive',     value: stats.inactive, icon: XCircle,     color: '#dc2626' },
     { label: 'QR Scans',     value: stats.scans,    icon: TrendingUp,  color: '#2563eb' },
   ]
+ 
+  useEffect(() => {
+    loadStats()
+    loadRecent()
+    loadActivity()
+    loadChartData()
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setAdminEmail(user.email)
+    })
+  }, [])
+
+   
+  useEffect(() => {
+    if (isTablet) setSidebarCollapsed(true)
+    if (!isMobile && !isTablet) setSidebarCollapsed(false)
+  }, [isMobile, isTablet])
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#f8f8f6', fontFamily: "'DM Sans', sans-serif" }}>

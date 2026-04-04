@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../supabase'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, CartesianGrid } from 'recharts'
+import { ResponsiveContainer, LineChart, Line, CartesianGrid, XAxis, Tooltip, BarChart, Bar, YAxis } from 'recharts'
 
 export default function Analytics() {
   const [topMurals, setTopMurals] = useState([])
@@ -8,8 +8,6 @@ export default function Analytics() {
   const [scansByMonth, setScansByMonth] = useState([])
   const [totalScans, setTotalScans] = useState(0)
   const [loading, setLoading] = useState(true)
-
-  useEffect(() => { loadAnalytics() }, [])
 
   const loadAnalytics = async () => {
     // Total scans
@@ -51,6 +49,8 @@ export default function Analytics() {
 
     setLoading(false)
   }
+
+  useEffect(() => { loadAnalytics() }, [])
 
   const tooltipStyle = { fontSize: '12px', borderRadius: '8px', border: '1px solid #ebebeb', boxShadow: 'none' }
 
