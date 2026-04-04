@@ -151,7 +151,7 @@ export default function Dashboard() {
     setMobileMenuOpen(false)
   }
 
-  // ─── stat card definitions ───────────────────────────────────────────────
+  //  stat card
   const statCards = [
     { label: 'Total Murals', value: stats.total,    icon: Image,       color: '#0a0a0a' },
     { label: 'Active',       value: stats.active,   icon: CheckCircle, color: '#16a34a' },
@@ -162,7 +162,7 @@ export default function Dashboard() {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#f8f8f6', fontFamily: "'DM Sans', sans-serif" }}>
 
-      {/* ── MOBILE TOP BAR ── */}
+      {/* mobile top bar */}
       {isMobile && (
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200,
@@ -187,7 +187,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* ── MOBILE DRAWER ── */}
+      {/* mobile menu */}
       {isMobile && mobileMenuOpen && (
         <>
           <div
@@ -235,7 +235,7 @@ export default function Dashboard() {
         </>
       )}
 
-      {/* ── DESKTOP / TABLET SIDEBAR ── */}
+      {/* desktop sidebar*/}
       {!isMobile && (
         <div style={{
           width: sw, background: '#0a0a0a', display: 'flex', flexDirection: 'column',
@@ -308,7 +308,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* ── MAIN CONTENT ── */}
+      {/* content */}
       <div style={{
         marginLeft: isMobile ? '0' : sw,
         flex: 1,
@@ -318,9 +318,7 @@ export default function Dashboard() {
         transition: 'margin-left 0.2s'
       }}>
 
-        {/* ════════════════════════════════════════
-            DASHBOARD VIEW
-        ════════════════════════════════════════ */}
+        {/* Dashboard */}
         {view === 'dashboard' && (
           <>
             {/* Page header */}
@@ -329,7 +327,7 @@ export default function Dashboard() {
               <p style={{ color: '#888', fontSize: '12px', marginTop: '3px', marginBottom: 0 }}>DBKU Mural Registry overview</p>
             </div>
 
-            {/* ── STAT CARDS ── */}
+            {/* stat cards*/}
             <div style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(2, 1fr)',
@@ -371,7 +369,7 @@ export default function Dashboard() {
               })}
             </div>
 
-            {/* ── STATUS OVERVIEW ── */}
+            {/* status overview */}
             {stats.total > 0 && (
               <div style={{
                 background: 'white',
@@ -404,7 +402,7 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* ── CHARTS — stacked on mobile, side by side on desktop ── */}
+            {/* charts - mobile stacked*/}
             <div style={{
               display: 'grid',
               gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
@@ -466,7 +464,7 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* ── QUICK ACTIONS ── */}
+            {/* Quick Actions */}
             <div style={{
               background: 'white',
               borderRadius: '12px',
@@ -644,9 +642,7 @@ export default function Dashboard() {
           </>
         )}
 
-        {/* ════════════════════════════════════════
-            MURALS VIEW
-        ════════════════════════════════════════ */}
+        {/* all murals */}
         {view === 'murals' && (
           <>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
@@ -662,9 +658,7 @@ export default function Dashboard() {
           </>
         )}
 
-        {/* ════════════════════════════════════════
-            ADD / EDIT VIEW
-        ════════════════════════════════════════ */}
+        {/* edit murals */}
         {(view === 'add' || view === 'edit') && (
           <>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
@@ -679,9 +673,7 @@ export default function Dashboard() {
           </>
         )}
 
-        {/* ════════════════════════════════════════
-            MAP VIEW
-        ════════════════════════════════════════ */}
+        {/* maps view */}
         {view === 'map' && (
           <>
             <div style={{ marginBottom: '20px' }}>
@@ -692,9 +684,7 @@ export default function Dashboard() {
           </>
         )}
 
-        {/* ════════════════════════════════════════
-            ANALYTICS VIEW
-        ════════════════════════════════════════ */}
+        {/*analytics*/}
         {view === 'analytics' && (
           <>
             <div style={{ marginBottom: '20px' }}>
@@ -705,9 +695,7 @@ export default function Dashboard() {
           </>
         )}
 
-        {/* ════════════════════════════════════════
-            EXPORT VIEW
-        ════════════════════════════════════════ */}
+        {/*export panels*/}
         {view === 'export' && (
           <>
             <div style={{ marginBottom: '20px' }}>
@@ -718,9 +706,7 @@ export default function Dashboard() {
           </>
         )}
 
-        {/* ════════════════════════════════════════
-            SETTINGS VIEW
-        ════════════════════════════════════════ */}
+        {/*settings*/}
         {view === 'settings' && (
           <>
             <div style={{ marginBottom: '20px' }}>
