@@ -117,16 +117,7 @@ export default function QRModal({ mural, onClose }) {
         style={{ background: 'white', borderRadius: '20px', padding: '36px', width: '380px', textAlign: 'center', fontFamily: "'DM Sans', sans-serif" }}
         onClick={e => e.stopPropagation()}
       >
-        {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
-          <div style={{ textAlign: 'left', flex: 1, marginRight: '12px' }}>
-            <div style={{ fontWeight: '700', fontSize: '16px', letterSpacing: '-0.3px', wordBreak: 'break-word', whiteSpace: 'normal', overflowWrap: 'break-word' }}>{mural.title}</div>
-            <div style={{ color: '#666', fontSize: '13px', marginTop: '3px', wordBreak: 'break-word', whiteSpace: 'normal', overflowWrap: 'break-word' }}>{mural.artist} · {mural.year_created}</div>
-          </div>
-          <button onClick={onClose} style={{ background: '#f5f5f5', border: 'none', borderRadius: '8px', padding: '6px', cursor: 'pointer', display: 'flex', color: '#555', flexShrink: 0 }}>
-            <X size={16} />
-          </button>
-        </div>
+
 
         {/* QR Code */}
         <div ref={qrRef} style={{ display: 'inline-block', padding: '20px', background: '#f8f8f6', borderRadius: '16px', marginBottom: '14px' }}>
