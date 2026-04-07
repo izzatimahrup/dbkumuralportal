@@ -213,7 +213,7 @@ function PreviewPanel({ form, images, onClose }) {
       {images.length > 1 && (
         <div style={{ padding: '16px 20px 0 20px' }}>
           <div style={{ fontSize: '10px', fontWeight: '700', letterSpacing: '1.5px', textTransform: 'uppercase', color: '#aaa', marginBottom: '10px' }}>
-            Gallery 
+            Gallery
           </div>
           <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '16px' }}>
             {images.map((img, i) => (
