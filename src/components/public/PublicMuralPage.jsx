@@ -61,7 +61,6 @@ const hasLoggedScan = useRef(false)
 
 useEffect(() => {
   loadMural()
-  
   // Only log scan once per mural
   if (!hasLoggedScan.current) {
     hasLoggedScan.current = true
