@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../supabase'
 import { Eye, EyeOff, MapPin, User, Calendar, Tag, ExternalLink, Crosshair } from 'lucide-react'
 import { logActivity } from '../../helpers/logActivity'
+import maplibregl from 'maplibre-gl'
+import 'maplibre-gl/dist/maplibre-gl.css'
 
-// Leaflet imports for the map
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet'
-import L from 'leaflet'
-import 'leaflet/dist/leaflet.css'
+// api key from maptiler cloud
+const MAPTILER_KEY = import.meta.env.VITE_MAPTILER_KEY
 
 const CATEGORIES = ['Heritage', 'Nature', 'Culture', 'Modern', 'Abstract', 'Community', 'Other']
 
@@ -15,14 +15,6 @@ const empty = {
   category: 'Heritage', status: 'active', description: '', story: '', youtube_url: '',
   address: '', lat: '', lng: '', google_maps_url: '', tags: ''
 }
-
-// Fix for default marker icons
-delete L.Icon.Default.prototype._getIconUrl
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-})
 
 // Helper function to generate the next mural ID
 async function getNextMuralId() {
@@ -52,85 +44,233 @@ async function getNextMuralId() {
   return `DBKU-MURAL-${formattedNumber}`
 }
 
-// Location Picker Component using OpenStreetMap
-function LocationPickerOSM({ lat, lng, onLocationChange, onAddressChange }) {
-  const [position, setPosition] = useState(lat && lng ? [parseFloat(lat), parseFloat(lng)] : [1.5575, 110.3593])
-  const [isGeocoding, setIsGeocoding] = useState(false)
+// ─── Add 3D layers after map loads ───────────────────────────────────────────
 
-  useEffect(() => {
-    if (lat && lng) {
-      setPosition([parseFloat(lat), parseFloat(lng)])
-    }
-  }, [lat, lng])
+function add3DLayers(map) {
+  // Terrain elevation source (Maptiler RGB-encoded DEM)
+  if (!map.getSource('maptiler-dem')) {
+    map.addSource('maptiler-dem', {
+      type: 'raster-dem',
+      url: `https://api.maptiler.com/tiles/terrain-rgb-v2/tiles.json?key=${MAPTILER_KEY}`,
+      tileSize: 256,
+    })
+  }
+  map.setTerrain({ source: 'maptiler-dem', exaggeration: 1.5 })
 
-  function MapEvents() {
-    useMapEvents({
-      click(e) {
-        const { lat, lng } = e.latlng
-        setPosition([lat, lng])
-        onLocationChange(lat, lng)
-
-        setIsGeocoding(true)
-        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`)
-          .then(res => res.json())
-          .then(data => {
-            if (data.display_name) onAddressChange(data.display_name)
-            setIsGeocoding(false)
-          })
-          .catch(err => {
-            console.error('Geocoding error:', err)
-            setIsGeocoding(false)
-          })
+  // Atmospheric sky
+  if (!map.getLayer('sky')) {
+    map.addLayer({
+      id: 'sky',
+      type: 'sky',
+      paint: {
+        'sky-type': 'atmosphere',
+        'sky-atmosphere-sun': [0.0, 90.0],
+        'sky-atmosphere-sun-intensity': 15,
       },
     })
-    return null
+  }
+
+  // 3D building extrusion
+  if (!map.getLayer('3d-buildings')) {
+    map.addLayer({
+      id: '3d-buildings',
+      source: 'openmaptiles',
+      'source-layer': 'building',
+      type: 'fill-extrusion',
+      minzoom: 14,
+      paint: {
+        'fill-extrusion-color': [
+          'interpolate', ['linear'], ['get', 'render_height'],
+          0,   '#ede9e1',
+          20,  '#ddd8ce',
+          50,  '#ccc5b8',
+          100, '#b8b0a0',
+        ],
+        'fill-extrusion-height': [
+          'interpolate', ['linear'], ['zoom'],
+          14,   0,
+          14.5, ['get', 'render_height'],
+        ],
+        'fill-extrusion-base': ['get', 'render_min_height'],
+        'fill-extrusion-opacity': 0.88,
+      },
+    })
+  }
+}
+
+// ─── Location Picker with Maplibre 3D ─────────────────────────────────────────
+
+function LocationPickerMaplibre({ lat, lng, onLocationChange, onAddressChange }) {
+  const mapContainer = useRef(null)
+  const mapRef = useRef(null)
+  const markerRef = useRef(null)
+  const [is3D, setIs3D] = useState(true)
+  const [isGeocoding, setIsGeocoding] = useState(false)
+
+  const initialLat = lat && !isNaN(parseFloat(lat)) ? parseFloat(lat) : 1.5575
+  const initialLng = lng && !isNaN(parseFloat(lng)) ? parseFloat(lng) : 110.3593
+
+  // Reverse geocode function
+  const reverseGeocode = async (latitude, longitude) => {
+    setIsGeocoding(true)
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`
+      )
+      const data = await response.json()
+      if (data.display_name) {
+        onAddressChange(data.display_name)
+      }
+    } catch (err) {
+      console.error('Geocoding error:', err)
+    } finally {
+      setIsGeocoding(false)
+    }
+  }
+
+  // Update marker position
+  const updateMarkerPosition = (map, newLat, newLng) => {
+    if (markerRef.current) {
+      markerRef.current.setLngLat([newLng, newLat])
+    } else {
+      // Create marker element
+      const el = document.createElement('div')
+      el.style.cssText = 'cursor:pointer;'
+      el.innerHTML = `
+        <div style="width:40px;height:40px;border-radius:50%;border:3px solid white;overflow:hidden;background:#0a0a0a;box-shadow:0 2px 12px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+            <circle cx="12" cy="10" r="3"/>
+          </svg>
+        </div>
+        <div style="width:2px;height:12px;background:#0a0a0a;margin-left:19px;"></div>
+        <div style="width:8px;height:8px;background:#0a0a0a;border-radius:50%;margin-left:16px;margin-top:-2px;"></div>
+      `
+      markerRef.current = new maplibregl.Marker({ element: el, draggable: true })
+        .setLngLat([newLng, newLat])
+        .addTo(map)
+
+      markerRef.current.on('dragend', () => {
+        const lngLat = markerRef.current.getLngLat()
+        onLocationChange(lngLat.lat, lngLat.lng)
+        reverseGeocode(lngLat.lat, lngLat.lng)
+      })
+    }
+  }
+
+  // Init map
+  useEffect(() => {
+    if (!mapContainer.current || mapRef.current) return
+
+    const map = new maplibregl.Map({
+      container: mapContainer.current,
+      style: `https://api.maptiler.com/maps/streets-v2/style.json?key=${MAPTILER_KEY}`,
+      center: [initialLng, initialLat],
+      zoom: 16,
+      pitch: 45,
+      bearing: -15,
+      antialias: true,
+      attributionControl: false,
+    })
+
+    map.addControl(new maplibregl.NavigationControl(), 'top-right')
+    map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-left')
+
+    mapRef.current = map
+
+    map.on('load', () => {
+      add3DLayers(map)
+      updateMarkerPosition(map, initialLat, initialLng)
+    })
+
+    // Handle click on map
+    map.on('click', (e) => {
+      const { lat: clickedLat, lng: clickedLng } = e.lngLat
+      onLocationChange(clickedLat, clickedLng)
+      updateMarkerPosition(map, clickedLat, clickedLng)
+      reverseGeocode(clickedLat, clickedLng)
+    })
+
+    return () => {
+      map.remove()
+      mapRef.current = null
+      markerRef.current = null
+    }
+  }, [])
+
+  // Update marker when lat/lng props change externally
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !lat || !lng) return
+    
+    const newLat = parseFloat(lat)
+    const newLng = parseFloat(lng)
+    if (isNaN(newLat) || isNaN(newLng)) return
+
+    updateMarkerPosition(map, newLat, newLng)
+    map.flyTo({ center: [newLng, newLat], duration: 500 })
+  }, [lat, lng])
+
+  // Toggle 3D
+  const toggle3D = () => {
+    const map = mapRef.current
+    if (!map) return
+    const next = !is3D
+    setIs3D(next)
+    map.easeTo({ pitch: next ? 45 : 0, bearing: next ? -15 : 0, duration: 600 })
   }
 
   return (
     <div style={{ marginBottom: '20px' }}>
       <div style={{
-        fontSize: '11px', color: '#888', fontWeight: '700', letterSpacing: '1px',
-        textTransform: 'uppercase', display: 'block', marginBottom: '6px'
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        marginBottom: '8px', flexWrap: 'wrap', gap: '8px'
       }}>
-        Pin Location on Map
-      </div>
-      <div style={{ fontSize: '12px', color: '#666', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <MapPin size={12} />
-        <span>Click on the map or drag the marker to set exact location</span>
-      </div>
-
-      <MapContainer center={position} zoom={15} style={{ height: '400px', width: '100%', borderRadius: '12px', zIndex: 1 }}>
-        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-        <MapEvents />
-        <Marker position={position} draggable={true}
-          eventHandlers={{
-            dragend(e) {
-              const { lat, lng } = e.target.getLatLng()
-              setPosition([lat, lng])
-              onLocationChange(lat, lng)
-              setIsGeocoding(true)
-              fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`)
-                .then(res => res.json())
-                .then(data => {
-                  if (data.display_name) onAddressChange(data.display_name)
-                  setIsGeocoding(false)
-                })
-                .catch(err => {
-                  console.error('Geocoding error:', err)
-                  setIsGeocoding(false)
-                })
-            }
+        <div>
+          <div style={{
+            fontSize: '11px', color: '#888', fontWeight: '700', letterSpacing: '1px',
+            textTransform: 'uppercase'
+          }}>
+            Pin Location on Map
+          </div>
+          <div style={{ fontSize: '12px', color: '#666', display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
+            <MapPin size={12} />
+            <span>Click on the map or drag the marker to set exact location</span>
+          </div>
+        </div>
+        <button
+          onClick={toggle3D}
+          style={{
+            fontSize: '10px', fontWeight: '600', padding: '4px 12px',
+            borderRadius: '20px', border: '1px solid #e8e6e2',
+            background: is3D ? '#0a0a0a' : '#f2f0ec',
+            color: is3D ? 'white' : '#555',
+            cursor: 'pointer', transition: 'all 0.25s',
           }}
-        />
-      </MapContainer>
+        >
+          {is3D ? '3D ' : '2D '}
+        </button>
+      </div>
 
-      {isGeocoding && <div style={{ fontSize: '12px', color: '#888', marginTop: '8px' }}>Getting address...</div>}
+      <div ref={mapContainer} style={{ height: '400px', width: '100%', borderRadius: '12px', overflow: 'hidden' }} />
+
+      {isGeocoding && (
+        <div style={{ fontSize: '12px', color: '#888', marginTop: '8px' }}>
+          Getting address...
+        </div>
+      )}
 
       {lat && lng && (
         <div style={{ marginTop: '12px', padding: '12px', background: '#f8f8f6', borderRadius: '10px', fontSize: '12px', color: '#555' }}>
           <strong>Coordinates:</strong> {parseFloat(lat).toFixed(6)}, {parseFloat(lng).toFixed(6)}
         </div>
       )}
+
+      <style>{`
+        .maplibregl-map .maplibregl-canvas {
+          outline: none;
+        }
+      `}</style>
     </div>
   )
 }
@@ -148,14 +288,15 @@ function PreviewPanel({ form, images, onClose }) {
   const tags = form.tags.split(',').map(t => t.trim()).filter(Boolean)
   const ytId = getYouTubeId(form.youtube_url)
 
+  const mapsUrl = form.google_maps_url || (form.lat && form.lng ? `https://www.google.com/maps?q=${form.lat},${form.lng}` : null)
+
+  // Static map preview using OpenStreetMap static
   const getMapPreview = () => {
     if (form.lat && form.lng) {
       return `https://staticmap.openstreetmap.de/staticmap.php?center=${form.lat},${form.lng}&zoom=15&size=400x200&maptype=mapnik&markers=${form.lat},${form.lng},ol-marker`
     }
     return null
   }
-
-  const mapsUrl = form.google_maps_url || (form.lat && form.lng ? `https://www.google.com/maps?q=${form.lat},${form.lng}` : null)
 
   return (
     <div style={{
@@ -560,7 +701,6 @@ export default function MuralForm({ mural, onDone }) {
       return
     }
 
-    
     try {
       // set all images to is_cover = false for this mural
       const { error: updateError } = await supabase
@@ -790,7 +930,7 @@ export default function MuralForm({ mural, onDone }) {
               </div>
             </div>
 
-            <LocationPickerOSM
+            <LocationPickerMaplibre
               lat={form.lat}
               lng={form.lng}
               onLocationChange={handleLocationChange}

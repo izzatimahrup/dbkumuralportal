@@ -26,7 +26,7 @@ const ACTIVITY_META = {
   status_changed: { icon: '◎',  color: '#d97706', bg: '#fffbeb', label: 'status changed' },
   qr_viewed:      { icon: '⊡',  color: '#7c3aed', bg: '#f5f3ff', label: 'QR viewed' },
   qr_downloaded:  { icon: '↓',  color: '#0891b2', bg: '#ecfeff', label: 'QR downloaded' },
-  qr_scanned:     { icon: '⌖',  color: '#059669', bg: '#ecfdf5', label: 'QR scanned' },
+  qr_scanned:     { icon: '⌖',  color: '#059669', bg: '#ecfdf5', label: 'QR scanned by' },
 }
 
 function useWindowWidth() {
@@ -50,56 +50,118 @@ export default function Dashboard() {
   const [scanData, setScanData] = useState([])
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
 
   const windowWidth = useWindowWidth()
   const isMobile = windowWidth < 768
   const isTablet = windowWidth >= 768 && windowWidth < 1024
 
   const loadStats = async () => {
-    const { count: total } = await supabase.from('murals').select('*', { count: 'exact', head: true })
-    const { count: active } = await supabase.from('murals').select('*', { count: 'exact', head: true }).eq('status', 'active')
-    const { count: inactive } = await supabase.from('murals').select('*', { count: 'exact', head: true }).eq('status', 'inactive')
-    const { count: scans } = await supabase.from('qr_scans').select('*', { count: 'exact', head: true })
-    setStats({ total: total || 0, active: active || 0, inactive: inactive || 0, scans: scans || 0 })
-  }
-
+  const { count: total } = await supabase.from('murals').select('*', { count: 'exact', head: true })
+  const { count: active } = await supabase.from('murals').select('*', { count: 'exact', head: true }).eq('status', 'active')
+  const { count: inactive } = await supabase.from('murals').select('*', { count: 'exact', head: true }).eq('status', 'inactive')
+  const { count: scans } = await supabase
+  .from('unique_qr_scans')
+  .select('*', { count: 'exact', head: true })
+  setStats({ total: total || 0, active: active || 0, inactive: inactive || 0, scans })
+}
   const loadRecent = async () => {
     const { data } = await supabase.from('murals').select('*, mural_images(*)').order('created_at', { ascending: false }).limit(5)
     setRecentMurals(data || [])
   }
 
-  const loadActivity = async () => {
-    const { data } = await supabase
-      .from('mural_activity')
+  const loadCombinedActivity = async () => {
+  console.log('🔄 Loading recent QR scans...')
+  
+  try {
+    // Fetch QR scans
+    const { data: qrScans, error } = await supabase
+      .from('qr_scans')
       .select('*')
-      .order('created_at', { ascending: false })
-      .limit(12)
-    setRecentActivity(data || [])
+      .order('scanned_at', { ascending: false })
+      .limit(15)
+    
+    if (error) {
+      console.error('❌ Error fetching scans:', error)
+      return
+    }
+    
+    console.log('📊 Fetched QR scans:', qrScans?.length || 0)
+    
+    if (!qrScans || qrScans.length === 0) {
+      setRecentActivity([])
+      return
+    }
+    
+    // Get unique mural IDs to fetch names
+    const muralIds = [...new Set(qrScans.map(scan => scan.mural_id))]
+    
+    // Fetch mural titles from murals table
+    const { data: murals } = await supabase
+      .from('murals')
+      .select('mural_id, title, custom_mural_id')
+      .in('mural_id', muralIds)
+    
+    // Create a map of mural_id to title
+    const muralNameMap = {}
+    murals?.forEach(mural => {
+      muralNameMap[mural.mural_id] = mural.title
+      if (mural.custom_mural_id) {
+        muralNameMap[mural.custom_mural_id] = mural.title
+      }
+    })
+    
+    // Transform data with both ID and Name
+    const scanActivities = qrScans.map(scan => ({
+      action: 'qr_scanned',
+      mural_id: scan.mural_id,  // The ID (e.g., DBKU-MURAL-001 or UUID)
+      mural_name: muralNameMap[scan.mural_id] || scan.mural_id,  // The actual name/title
+      detail: scan.ip_address ? `IP: ${scan.ip_address}` : 'QR code scanned ',
+      created_at: scan.scanned_at,
+      ip_address: scan.ip_address,
+      country: scan.country,
+      city: scan.city,
+      //user_agent: scan.user_agent
+    }))
+
+     
+    
+    setRecentActivity(scanActivities)
+    console.log('✅ Loaded', scanActivities.length, 'activities')
+    
+  } catch (err) {
+    console.error('❌ Unexpected error:', err)
+  }
+}
+  const loadChartData = async () => {
+  const { data: murals } = await supabase.from('murals').select('category')
+  if (murals) {
+    const counts = {}
+    murals.forEach(m => { counts[m.category] = (counts[m.category] || 0) + 1 })
+    setCategoryData(Object.entries(counts).map(([name, value]) => ({ name, value })))
   }
 
-  const loadChartData = async () => {
-    const { data: murals } = await supabase.from('murals').select('category')
-    if (murals) {
-      const counts = {}
-      murals.forEach(m => { counts[m.category] = (counts[m.category] || 0) + 1 })
-      setCategoryData(Object.entries(counts).map(([name, value]) => ({ name, value })))
-    }
-    const days = []
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date()
-      d.setDate(d.getDate() - i)
-      const label = d.toLocaleDateString('en-MY', { weekday: 'short' })
-      const dateStr = d.toISOString().split('T')[0]
-      days.push({ label, date: dateStr })
-    }
-    const { data: scans } = await supabase.from('qr_scans').select('scanned_at').gte('scanned_at', days[0].date)
-    const scanCounts = {}
-    days.forEach(d => { scanCounts[d.date] = 0 })
-    scans?.forEach(s => {
-      const date = s.scanned_at.split('T')[0]
-      if (scanCounts[date] !== undefined) scanCounts[date]++
-    })
-    setScanData(days.map(d => ({ name: d.label, scans: scanCounts[d.date] })))
+  const days = []
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date()
+    d.setDate(d.getDate() - i)
+    const label = d.toLocaleDateString('en-MY', { weekday: 'short' })
+    const dateStr = d.toISOString().split('T')[0]
+    days.push({ label, date: dateStr })
+  }
+
+  const { data: scans } = await supabase
+  .from('unique_qr_scans')
+  .select('scanned_at')
+  .gte('scanned_at', days[0].date)
+
+const scanCounts = {}
+days.forEach(d => { scanCounts[d.date] = 0 })
+scans?.forEach(s => {
+  const date = s.scanned_at.split('T')[0]
+  if (scanCounts[date] !== undefined) scanCounts[date]++
+})
+setScanData(days.map(d => ({ name: d.label, scans: scanCounts[d.date] })))
   }
 
   const handleLogout = async () => {
@@ -108,10 +170,11 @@ export default function Dashboard() {
   }
 
   const handleEdit = (mural) => { setEditingMural(mural); setView('edit') }
+  
   const handleDone = () => {
     setView('murals')
     setEditingMural(null)
-    loadStats(); loadRecent(); loadActivity(); loadChartData()
+    setRefreshTrigger(prev => prev + 1) // Refresh all data
   }
 
   const navItems = [
@@ -136,7 +199,6 @@ export default function Dashboard() {
     setMobileMenuOpen(false)
   }
 
-  //  stat card
   const statCards = [
     { label: 'Total Murals', value: stats.total,    icon: Image,       color: '#0a0a0a' },
     { label: 'Active',       value: stats.active,   icon: CheckCircle, color: '#16a34a' },
@@ -144,17 +206,68 @@ export default function Dashboard() {
     { label: 'QR Scans',     value: stats.scans,    icon: TrendingUp,  color: '#2563eb' },
   ]
  
+  // Load data when refreshTrigger changes
   useEffect(() => {
     loadStats()
     loadRecent()
-    loadActivity()
+    loadCombinedActivity()
     loadChartData()
+  }, [refreshTrigger])
+
+  // Load admin email on mount
+  useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) setAdminEmail(user.email)
     })
   }, [])
 
-   
+  // Real-time subscriptions for automatic refresh
+  useEffect(() => {
+    // Subscribe to new QR scans
+    const scanSubscription = supabase
+      .channel('qr_scans_changes')
+      .on('postgres_changes', 
+        { event: 'INSERT', schema: 'public', table: 'qr_scans' }, 
+        () => {
+          console.log('🔄 New QR scan detected, refreshing...')
+          setRefreshTrigger(prev => prev + 1)
+        }
+      )
+      .subscribe()
+
+    // Subscribe to mural activity changes
+    const activitySubscription = supabase
+      .channel('mural_activity_changes')
+      .on('postgres_changes', 
+        { event: 'INSERT', schema: 'public', table: 'mural_activity' }, 
+        () => {
+          console.log('🔄 New activity detected, refreshing...')
+          setRefreshTrigger(prev => prev + 1)
+        }
+      )
+      .subscribe()
+
+    // Subscribe to mural changes (add/update/delete)
+    const muralSubscription = supabase
+      .channel('murals_changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'murals' }, 
+        () => {
+          console.log('🔄 Mural data changed, refreshing...')
+          setRefreshTrigger(prev => prev + 1)
+        }
+      )
+      .subscribe()
+
+    // Cleanup subscriptions
+    return () => {
+      scanSubscription.unsubscribe()
+      activitySubscription.unsubscribe()
+      muralSubscription.unsubscribe()
+    }
+  }, [])
+
+  // Handle sidebar collapse on tablet
   useEffect(() => {
     if (isTablet) setSidebarCollapsed(true)
     if (!isMobile && !isTablet) setSidebarCollapsed(false)
@@ -328,144 +441,48 @@ export default function Dashboard() {
               <p style={{ color: '#888', fontSize: '12px', marginTop: '3px', marginBottom: 0 }}>DBKU Mural Registry overview</p>
             </div>
 
-            {/* stat cards*/}
+            {/* stat cards */}
             <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(2, 1fr)',
+              display: 'flex',
               gap: isMobile ? '8px' : '14px',
-              marginBottom: isMobile ? '12px' : '20px'
+              marginBottom: isMobile ? '12px' : '20px',
             }}>
-              {statCards.map(s => {
+              {statCards.map((s, idx) => {
                 const Icon = s.icon
                 return (
                   <div key={s.label} style={{
+                    flex: 1,
                     background: 'white',
-                    borderRadius: '12px',
-                    padding: isMobile ? '14px' : '20px',
-                    border: '1px solid #ebebeb'
+                    borderRadius: '10px',
+                     padding: isMobile ? '8px 6px' : '10px 8px',
+                    border: '1px solid #ebebeb',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    textAlign: 'center',
                   }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <div>
-                        <div style={{
-                          fontSize: isMobile ? '22px' : '28px',
-                          fontWeight: '700',
-                          letterSpacing: '-1px',
-                          color: s.color
-                        }}>
-                          {s.value}
-                        </div>
-                        <div style={{ fontSize: '11px', color: '#888', marginTop: '3px' }}>{s.label}</div>
-                      </div>
-                      <div style={{
-                        width: '32px', height: '32px', borderRadius: '8px',
-                        background: '#f8f8f6',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        flexShrink: 0
-                      }}>
-                        <Icon size={14} color={s.color} />
-                      </div>
+                    <div style={{
+                      fontSize: isMobile ? '22px' : '28px',
+                      fontWeight: '700',
+                      letterSpacing: '-1px',
+                      color: s.color,
+                      lineHeight: 1,
+                    }}>
+                      {s.value}
+                    </div>
+                    <div style={{
+                      fontSize: '10px',
+                      color: '#888',
+                      marginTop: '3px',
+                    }}>
+                      {s.label}
                     </div>
                   </div>
                 )
               })}
             </div>
-
-            {/* status overview */}
-            {stats.total > 0 && (
-              <div style={{
-                background: 'white',
-                borderRadius: '12px',
-                padding: isMobile ? '12px 14px' : '16px 20px',
-                border: '1px solid #ebebeb',
-                marginBottom: isMobile ? '12px' : '20px'
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <span style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#888' }}>
-                    Status overview
-                  </span>
-                  <span style={{ fontSize: '11px', color: '#aaa' }}>
-                    {Math.round((stats.active / stats.total) * 100)}% active
-                  </span>
-                </div>
-                <div style={{ height: isMobile ? '6px' : '8px', borderRadius: '4px', background: '#f0f0f0', overflow: 'hidden', marginBottom: '8px' }}>
-                  <div style={{
-                    height: '100%',
-                    width: `${(stats.active / stats.total) * 100}%`,
-                    background: '#0a0a0a',
-                    borderRadius: '4px',
-                    transition: 'width 0.5s'
-                  }} />
-                </div>
-                <div style={{ display: 'flex', gap: '16px' }}>
-                  <span style={{ fontSize: '12px', color: '#555' }}><span style={{ fontWeight: '700' }}>{stats.active}</span> active</span>
-                  <span style={{ fontSize: '12px', color: '#aaa' }}><span style={{ fontWeight: '700' }}>{stats.inactive}</span> inactive</span>
-                </div>
-              </div>
-            )}
-
-            {/* charts - mobile stacked*/}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
-              gap: isMobile ? '12px' : '16px',
-              marginBottom: isMobile ? '12px' : '20px'
-            }}>
-              {/* QR Scans bar chart */}
-              <div style={{ background: 'white', borderRadius: '12px', padding: isMobile ? '14px' : '20px', border: '1px solid #ebebeb' }}>
-                <div style={{ marginBottom: '10px' }}>
-                  <div style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#888' }}>QR Scans</div>
-                  <div style={{ fontSize: '11px', color: '#bbb', marginTop: '2px' }}>Last 7 days</div>
-                </div>
-                {/* fixed-height wrapper prevents ResponsiveContainer from bloating */}
-                <div style={{ height: '120px' }}>
-                  <ResponsiveContainer width="100%" height={120}>
-                    <BarChart data={scanData} barSize={18}>
-                      <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#aaa' }} axisLine={false} tickLine={false} />
-                      <YAxis hide />
-                      <Tooltip contentStyle={{ fontSize: '12px', borderRadius: '8px', border: '1px solid #ebebeb', boxShadow: 'none' }} />
-                      <Bar dataKey="scans" fill="#0a0a0a" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* Category pie chart */}
-              <div style={{ background: 'white', borderRadius: '12px', padding: isMobile ? '14px' : '20px', border: '1px solid #ebebeb' }}>
-                <div style={{ marginBottom: '10px' }}>
-                  <div style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#888' }}>By Category</div>
-                  <div style={{ fontSize: '11px', color: '#bbb', marginTop: '2px' }}>Mural distribution</div>
-                </div>
-                {categoryData.length === 0
-                  ? (
-                    <div style={{ height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ddd', fontSize: '12px' }}>
-                      No data yet
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                      <div style={{ width: 100, height: 100, flexShrink: 0 }}>
-                        <ResponsiveContainer width={100} height={100}>
-                          <PieChart>
-                            <Pie data={categoryData} cx="50%" cy="50%" innerRadius={24} outerRadius={44} dataKey="value" paddingAngle={2}>
-                              {categoryData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                            </Pie>
-                          </PieChart>
-                        </ResponsiveContainer>
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        {categoryData.map((d, i) => (
-                          <div key={d.name} style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '5px' }}>
-                            <div style={{ width: '7px', height: '7px', borderRadius: '2px', background: COLORS[i % COLORS.length], flexShrink: 0 }} />
-                            <span style={{ fontSize: '11px', color: '#555', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</span>
-                            <span style={{ fontSize: '11px', fontWeight: '600', color: '#0a0a0a' }}>{d.value}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-              </div>
-            </div>
-
-            {/* Quick Actions */}
+                        {/* Quick Actions */}
             <div style={{
               background: 'white',
               borderRadius: '12px',
@@ -515,7 +532,101 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* ── BOTTOM ROW: Recently Added + Recent Activity ── */}
+            {/* status overview */}
+            {stats.total > 0 && (
+              <div style={{
+                background: 'white',
+                borderRadius: '12px',
+                padding: isMobile ? '12px 14px' : '16px 20px',
+                border: '1px solid #ebebeb',
+                marginBottom: isMobile ? '12px' : '20px'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#888' }}>
+                    Status overview
+                  </span>
+                  <span style={{ fontSize: '11px', color: '#aaa' }}>
+                    {Math.round((stats.active / stats.total) * 100)}% active
+                  </span>
+                </div>
+                <div style={{ height: isMobile ? '6px' : '8px', borderRadius: '4px', background: '#f0f0f0', overflow: 'hidden', marginBottom: '8px' }}>
+                  <div style={{
+                    height: '100%',
+                    width: `${(stats.active / stats.total) * 100}%`,
+                    background: '#0a0a0a',
+                    borderRadius: '4px',
+                    transition: 'width 0.5s'
+                  }} />
+                </div>
+                <div style={{ display: 'flex', gap: '16px' }}>
+                  <span style={{ fontSize: '12px', color: '#555' }}><span style={{ fontWeight: '700' }}>{stats.active}</span> active</span>
+                  <span style={{ fontSize: '12px', color: '#aaa' }}><span style={{ fontWeight: '700' }}>{stats.inactive}</span> inactive</span>
+                </div>
+              </div>
+            )}
+
+            {/* charts - mobile stacked*/}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+              gap: isMobile ? '12px' : '16px',
+              marginBottom: isMobile ? '12px' : '20px'
+            }}>
+              {/* QR Scans bar chart */}
+              <div style={{ background: 'white', borderRadius: '12px', padding: isMobile ? '14px' : '20px', border: '1px solid #ebebeb' }}>
+                <div style={{ marginBottom: '10px' }}>
+                  <div style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#888' }}>QR Scans</div>
+                  <div style={{ fontSize: '11px', color: '#bbb', marginTop: '2px' }}>Last 7 days</div>
+                </div>
+                <div style={{ height: '120px' }}>
+                  <ResponsiveContainer width="100%" height={120}>
+                    <BarChart data={scanData} barSize={18}>
+                      <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#aaa' }} axisLine={false} tickLine={false} />
+                      <YAxis hide />
+                      <Tooltip contentStyle={{ fontSize: '12px', borderRadius: '8px', border: '1px solid #ebebeb', boxShadow: 'none' }} />
+                      <Bar dataKey="scans" fill="#0a0a0a" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Category pie chart */}
+              <div style={{ background: 'white', borderRadius: '12px', padding: isMobile ? '14px' : '20px', border: '1px solid #ebebeb' }}>
+                <div style={{ marginBottom: '10px' }}>
+                  <div style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#888' }}>By Category</div>
+                  <div style={{ fontSize: '11px', color: '#bbb', marginTop: '2px' }}>Mural distribution</div>
+                </div>
+                {categoryData.length === 0
+                  ? (
+                    <div style={{ height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ddd', fontSize: '12px' }}>
+                      No data yet
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                      <div style={{ width: 100, height: 100, flexShrink: 0 }}>
+                        <ResponsiveContainer width={100} height={100}>
+                          <PieChart>
+                            <Pie data={categoryData} cx="50%" cy="50%" innerRadius={24} outerRadius={44} dataKey="value" paddingAngle={2}>
+                              {categoryData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                            </Pie>
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        {categoryData.map((d, i) => (
+                          <div key={d.name} style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '5px' }}>
+                            <div style={{ width: '7px', height: '7px', borderRadius: '2px', background: COLORS[i % COLORS.length], flexShrink: 0 }} />
+                            <span style={{ fontSize: '11px', color: '#555', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.name}</span>
+                            <span style={{ fontSize: '11px', fontWeight: '600', color: '#0a0a0a' }}>{d.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+              </div>
+            </div>
+
+            {/* BOTTOM ROW: Recently Added + Recent Activity */}
             <div style={{
               display: 'grid',
               gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
@@ -544,7 +655,6 @@ export default function Dashboard() {
                       padding: isMobile ? '8px 0' : '10px 0',
                       borderBottom: idx < recentMurals.length - 1 ? '1px solid #f5f5f5' : 'none'
                     }}>
-                      {/* thumbnail */}
                       <div style={{
                         width: isMobile ? '34px' : '38px',
                         height: isMobile ? '34px' : '38px',
@@ -558,14 +668,12 @@ export default function Dashboard() {
                           ? <img src={m.mural_images[0].image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           : <Image size={13} color="#ccc" />}
                       </div>
-                      {/* text */}
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: '13px', fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {m.title}
                         </div>
                         <div style={{ fontSize: '11px', color: '#888' }}>{m.artist} · {m.mural_id}</div>
                       </div>
-                      {/* status badge */}
                       <span style={{
                         fontSize: '10px',
                         padding: '2px 7px',
@@ -591,7 +699,7 @@ export default function Dashboard() {
                     <div style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#888' }}>Recent Activity</div>
                   </div>
                   <button
-                    onClick={loadActivity}
+                    onClick={() => setRefreshTrigger(prev => prev + 1)}
                     style={{ fontSize: '11px', color: '#bbb', background: 'none', border: 'none', cursor: 'pointer' }}
                   >
                     Refresh
@@ -603,6 +711,7 @@ export default function Dashboard() {
                 ) : (
                   recentActivity.map((a, idx) => {
                     const meta = ACTIVITY_META[a.action] || { icon: '•', color: '#888', bg: '#f8f8f6', label: a.action }
+                    const isScan = a.action === 'qr_scanned'
                     return (
                       <div key={a.id} style={{
                         display: 'flex',
@@ -611,7 +720,6 @@ export default function Dashboard() {
                         padding: isMobile ? '7px 0' : '9px 0',
                         borderBottom: idx < recentActivity.length - 1 ? '1px solid #f5f5f5' : 'none'
                       }}>
-                        {/* icon */}
                         <div style={{
                           width: isMobile ? '24px' : '26px',
                           height: isMobile ? '24px' : '26px',
@@ -621,18 +729,27 @@ export default function Dashboard() {
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           fontSize: '12px', color: meta.color, fontWeight: '700'
                         }}>
-                          {meta.icon}
+                          {isScan ? '⌖' : meta.icon}
                         </div>
-                        {/* text */}
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontSize: isMobile ? '12px' : '13px', fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {a.mural_title || '—'}
+                             {a.mural_name || a.mural_id || '—'}
                           </div>
                           <div style={{ fontSize: '11px', color: '#aaa', marginTop: '1px' }}>
                             <span style={{ color: meta.color, fontWeight: '600' }}>{meta.label}</span>
-                            {a.detail ? <span> · {a.detail}</span> : null}
+                            {a.detail && !isScan ? <span> · {a.detail}</span> : null}
+                            {isScan && a.ip_address!== 'unknown' && (
+                              <span> · <span style={{ fontFamily: 'monospace', color: '#0a0a0a', fontWeight: '500' }}>{a.ip_address}</span></span>
+                            )}
+                            {isScan && a.country && <span> · {a.country}</span>}
+                            {isScan && a.city && <span> · {a.city}</span>}
                             <span> · {formatTime(a.created_at)}</span>
                           </div>
+                          {isScan && a.user_agent && (
+                            <div style={{ fontSize: '9px', color: '#ccc', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {a.user_agent.split(' ').slice(0, 3).join(' ')}...
+                            </div>
+                          )}
                         </div>
                       </div>
                     )
@@ -655,7 +772,7 @@ export default function Dashboard() {
                 <Plus size={15} /> Add Mural
               </button>
             </div>
-            <MuralList onEdit={handleEdit} onRefresh={loadStats} />
+            <MuralList onEdit={handleEdit} onRefresh={() => setRefreshTrigger(prev => prev + 1)} />
           </>
         )}
 

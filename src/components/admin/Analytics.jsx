@@ -10,46 +10,67 @@ export default function Analytics() {
   const [loading, setLoading] = useState(true)
 
   const loadAnalytics = async () => {
-    // Total scans
-    const { count } = await supabase.from('qr_scans').select('*', { count: 'exact', head: true })
-    setTotalScans(count || 0)
+  const { data: allScans } = await supabase
+    .from('unique_qr_scans')
+    .select('scanned_at, mural_id, visitor_id, ip_address')
 
-    // Scans last 30 days by day
-    const days = []
-    for (let i = 29; i >= 0; i--) {
-      const d = new Date(); d.setDate(d.getDate() - i)
-      days.push({ date: d.toISOString().split('T')[0], label: d.toLocaleDateString('en-MY', { day: 'numeric', month: 'short' }) })
-    }
-    const { data: recentScans } = await supabase.from('qr_scans').select('scanned_at, mural_id').gte('scanned_at', days[0].date)
-    const dayCounts = {}
-    days.forEach(d => { dayCounts[d.date] = 0 })
-    recentScans?.forEach(s => { const d = s.scanned_at.split('T')[0]; if (dayCounts[d] !== undefined) dayCounts[d]++ })
-    setScansByDay(days.map(d => ({ name: d.label, scans: dayCounts[d.date] })))
+  // Total — just length since view already deduped
+  setTotalScans(allScans?.length || 0)
 
-    // Scans by month (last 6)
-    const months = []
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(); d.setMonth(d.getMonth() - i)
-      months.push({ month: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`, label: d.toLocaleDateString('en-MY', { month: 'short', year: '2-digit' }) })
-    }
-    const { data: allScans } = await supabase.from('qr_scans').select('scanned_at')
-    const monthCounts = {}
-    months.forEach(m => { monthCounts[m.month] = 0 })
-    allScans?.forEach(s => { const m = s.scanned_at.substring(0, 7); if (monthCounts[m] !== undefined) monthCounts[m]++ })
-    setScansByMonth(months.map(m => ({ name: m.label, scans: monthCounts[m.month] })))
+  // Last 30 days
+  const days = []
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i)
+    days.push({ date: d.toISOString().split('T')[0], label: d.toLocaleDateString('en-MY', { day: 'numeric', month: 'short' }) })
+  }
+  const recentScans = allScans?.filter(s => s.scanned_at >= days[0].date) || []
+  const dayCounts = {}
+  days.forEach(d => { dayCounts[d.date] = 0 })
+  // ✅ days goes here
+  recentScans.forEach(s => {
+    const d = s.scanned_at.split('T')[0]
+    if (dayCounts[d] !== undefined) dayCounts[d]++
+  })
+  setScansByDay(days.map(d => ({ name: d.label, scans: dayCounts[d.date] })))
 
-    // Top murals by scan count
-    const muralCounts = {}
-    recentScans?.forEach(s => { muralCounts[s.mural_id] = (muralCounts[s.mural_id] || 0) + 1 })
-    const topIds = Object.entries(muralCounts).sort((a, b) => b[1] - a[1]).slice(0, 5)
-    if (topIds.length > 0) {
-      const { data: murals } = await supabase.from('murals').select('id, title, mural_id').in('id', topIds.map(t => t[0]))
-      setTopMurals(topIds.map(([id, count]) => ({ title: murals?.find(m => m.id === id)?.title || id, mural_id: murals?.find(m => m.id === id)?.mural_id || '', count })))
-    }
+  // Last 6 months
+  const months = []
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(); d.setMonth(d.getMonth() - i)
+    months.push({ month: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`, label: d.toLocaleDateString('en-MY', { month: 'short', year: '2-digit' }) })
+  }
+  const monthCounts = {}
+  months.forEach(m => { monthCounts[m.month] = 0 })
+  // ✅ months goes here
+  allScans?.forEach(s => {
+    const m = s.scanned_at.substring(0, 7)
+    if (monthCounts[m] !== undefined) monthCounts[m]++
+  })
+  setScansByMonth(months.map(m => ({ name: m.label, scans: monthCounts[m.month] })))
 
-    setLoading(false)
+  // Top murals
+  const muralCounts = {}
+  // ✅ top murals goes here
+  recentScans.forEach(s => {
+    muralCounts[s.mural_id] = (muralCounts[s.mural_id] || 0) + 1
+  })
+  const topIds = Object.entries(muralCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+  if (topIds.length > 0) {
+    const { data: murals } = await supabase
+      .from('murals')
+      .select('id, title, mural_id')
+      .in('mural_id', topIds.map(t => t[0]))
+    setTopMurals(topIds.map(([id, count]) => ({
+      title: murals?.find(m => m.mural_id === id)?.title || id,
+      mural_id: id,
+      count
+    })))
   }
 
+  setLoading(false)
+}
   useEffect(() => { loadAnalytics() }, [])
 
   const tooltipStyle = { fontSize: '12px', borderRadius: '8px', border: '1px solid #ebebeb', boxShadow: 'none' }
