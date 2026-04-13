@@ -6,7 +6,7 @@ import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 
 // api key from maptiler cloud
-const MAPTILER_KEY = 'p3JDbbJLHWEKqJumUdqT'
+const MAPTILER_KEY = import.meta.env.VITE_MAPTILER_KEY
 
 // ─── Add 3D layers after map loads ───────────────────────────────────────────
 
