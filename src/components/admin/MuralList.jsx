@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../supabase'
-import QRModal from './QrModal'
+import QRModal from './QRModal'
 import { logActivity } from '../../helpers/logActivity'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
